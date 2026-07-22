@@ -1,0 +1,4 @@
+tipo_via,n_lecturas,conteo_prom,conteo_max,temp_prom
+Arteria,480,22.5,54,23.3
+Local,480,23.0,53,23.1
+Troncal,480,23.2,53,22.9
