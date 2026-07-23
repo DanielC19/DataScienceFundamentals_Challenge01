@@ -23,7 +23,7 @@
 
 ## 2. Pregunta de negocio
 
-- **Pregunta ancla del conjunto de datos:** [copie la pregunta de negocio de la Guía del Taller]
+- **Pregunta ancla del conjunto de datos:** ¿En qué corredores y horarios se debe pilotear semaforización inteligente?
 - **Pregunta específica que su equipo decidió responder:** [reformúlenla en términos
   de probabilidad/decisión, no de "cuánto", siguiendo el ejemplo del Taller de Decisión
   de la Sesión 1]
