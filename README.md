@@ -24,14 +24,11 @@
 ## 2. Pregunta de negocio
 
 - **Pregunta ancla del conjunto de datos:** ¿En qué corredores y horarios se debe pilotear semaforización inteligente?
-- **Pregunta específica que su equipo decidió responder:** [reformúlenla en términos
-  de probabilidad/decisión, no de "cuánto", siguiendo el ejemplo del Taller de Decisión
-  de la Sesión 1]
+- **Pregunta específica que su equipo decidió responder:** ¿Cómo afectan las horas pico a la temperatura ambiental en los corredores de movilidad urbana?
 
 ## 3. Estructura del repositorio
 
 ```
-.
 ├── README.md
 ├── data/
 │   ├── raw/                  # datos originales (sin modificar)
