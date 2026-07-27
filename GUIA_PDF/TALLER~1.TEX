@@ -1,0 +1,660 @@
+\documentclass[11pt]{article}
+\usepackage[spanish,provide=*]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{float}
+\tcbuselibrary{skins,breakable}
+
+\graphicspath{{figures/}}
+
+\newtcolorbox{contexto}[1][]{colback=blue!5,colframe=blue!40!black,title=#1,fonttitle=\bfseries,breakable}
+\newtcolorbox{pregunta}[1][]{colback=gray!5,colframe=gray!60!black,title=#1,fonttitle=\bfseries,breakable}
+\newtcolorbox{aviso}[1][]{colback=red!5,colframe=red!50!black,title=#1,fonttitle=\bfseries,breakable}
+\newtcolorbox{respuesta}[1][]{colback=green!4,colframe=green!45!black,title=#1,fonttitle=\bfseries,breakable}
+
+% Si alguna figura no esta en la carpeta figures/, se muestra
+% un marco en su lugar para que el documento siga compilando.
+\makeatletter
+\let\origincludegraphics\includegraphics
+\renewcommand{\includegraphics}[2][]{%
+  \IfFileExists{figures/#2}{\origincludegraphics[#1]{#2}}{%
+  \IfFileExists{#2}{\origincludegraphics[#1]{#2}}{%
+    \fbox{\parbox{0.9\textwidth}{\centering\vspace{1.2em}\ttfamily\detokenize{#2}\\[0.4em]
+    \rmfamily\small (figura no incluida en este repositorio)\vspace{1.2em}}}}}}
+\makeatother
+
+\title{\vspace{-1.5cm}\textbf{Taller Práctico No. 1} \\[0.3em]
+\large Fundamentos en Ciencia de Datos \\
+\normalsize Maestría en Ciencia de Datos y Analítica -- Universidad EAFIT}
+\author{\textbf{Equipo:} Miguel Ángel Cano Salinas \quad$\cdot$\quad Daniel Correa Botero \quad$\cdot$\quad Daniel Felipe Arango Guarín \\[0.4em]
+\normalsize Docente: Jorge Iván Padilla-Buriticá}
+\date{Periodo académico 2026-2 \\ Fecha límite de entrega: domingo 26 de julio de 2026}
+
+\begin{document}
+\maketitle
+\vspace{-1cm}
+
+\begin{contexto}[Instrucciones generales]
+\begin{itemize}[leftmargin=1.3em]
+  \item Trabajo \textbf{en equipo} (el mismo equipo y el mismo conjunto de datos con el que trabajó en el notebook de este taller), a libro abierto.
+  \item Este documento \textbf{no evalúa cuánto código escribe el equipo}: evalúa \textbf{la calidad del razonamiento}. Los fragmentos de código solicitados deben ser cortos (1 a 5 líneas) y sirven para \emph{sustentar} una decisión, no para reemplazarla.
+  \item Los tres conjuntos de datos (A, B y C) son entregados por el docente el día de la sesión práctica; ningún equipo los conoce de antemano. Trabaje sobre \textbf{el conjunto de datos que su equipo eligió} durante todo el documento e indíquelo explícitamente al inicio de su respuesta.
+  \item Toda afirmación estadística debe ir acompañada de su justificación: ``el promedio es X'' sin argumento no tiene valor evaluativo.
+  \item Puede apoyarse en herramientas de IA generativa para redactar o verificar sintaxis de \texttt{pandas}, siempre que declare su uso según el Pacto Pedagógico del curso (ver \texttt{docs/declaracion\_uso\_IA.md} del repositorio de entrega). La IA no debe sustituir el criterio del equipo: se calificará la interpretación propia, no la del asistente.
+  \item Este documento se responde y se entrega junto con el notebook de este mismo taller, dentro del mismo repositorio de GitHub, antes de la fecha límite.
+\end{itemize}
+\end{contexto}
+
+\section*{Conjunto de datos elegido}
+El docente entregará el día de la sesión práctica los tres conjuntos de datos disponibles.
+Su equipo debe elegir \textbf{uno} y trabajar con él durante todo el documento:
+
+\begin{itemize}[leftmargin=1.3em]
+  \item \textbf{Dataset A -- Retail:} \texttt{retail\_ventas\_LIMPIO.csv} / \texttt{retail\_ventas\_CONTAMINADO.csv} (cadena de panaderías en Medellín).
+  \item \textbf{Dataset B -- Salud pública:} \texttt{salud\_consultas\_LIMPIO.csv} / \texttt{salud\_consultas\_CONTAMINADO.csv} (consultas por comuna).
+  \item \textbf{Dataset C -- Movilidad urbana:} \texttt{movilidad\_sensores\_LIMPIO.csv} / \texttt{movilidad\_sensores\_CONTAMINADO.csv} (sensores IoT de tráfico y clima).
+\end{itemize}
+
+\noindent\textbf{Conjunto de datos elegido: \underline{Dataset C -- Movilidad urbana}}
+
+\vspace{0.3em}
+\begin{respuesta}[Nuestro equipo]
+\textbf{Integrantes:} Miguel Ángel Cano Salinas, Daniel Correa Botero y Daniel Felipe Arango Guarín.
+
+\medskip
+\textbf{Conjunto de datos elegido: Dataset C -- Movilidad urbana} (\texttt{movilidad\_sensores}).
+
+Trabajamos los tres archivos: \texttt{movilidad\_sensores\_LIMPIO.csv} (1440 filas), \texttt{movilidad\_sensores\_CONTAMINADO.csv} (1455 filas) y \texttt{clima\_api\_log.json} (120 registros anidados). La Parte 1 la respondemos sobre el archivo LIMPIO, la Parte 2 sobre el CONTAMINADO, y la Parte 3 sobre las tablas y gráficas dadas, contrastándolas con lo que obtuvimos en nuestro notebook.
+\end{respuesta}
+
+
+%==============================================================
+\section{Parte 1 -- Análisis estadístico general (30\%)}
+%==============================================================
+\begin{contexto}[Objetivo de la parte]
+Evaluar su capacidad de aplicar el estadístico \emph{correcto} según el tipo de dato, sin necesidad de código: esta parte se responde sobre el archivo \textbf{LIMPIO} de su conjunto de datos.
+\end{contexto}
+
+\noindent Consulte el diccionario de variables de su conjunto de datos en el \textbf{Anexo A}.
+
+\begin{pregunta}[1.1 -- Taxonomía (6 pts)]
+Clasifique \textbf{cinco} variables de su conjunto de datos según la taxonomía vista en clase (nominal, ordinal, discreta, continua). Para cada una, explique en una frase por qué esa clasificación —y no otra— determina qué estadístico de tendencia central es válido usar.
+\end{pregunta}
+
+\begin{respuesta}[Respuesta 1.1]
+{\small
+\begin{longtable}{p{3.4cm}p{1.9cm}p{9.0cm}}
+\toprule
+Variable & Clasificación & Por qué esa clasificación decide el estadístico \\
+\midrule
+\texttt{sensor\_id} & Nominal & Es una etiqueta que identifica un sensor cuyos valores no se suman ni se promedian, se puede usar la moda para ver que sensor es el más usado. \\
+\texttt{condicion\_clima} & Nominal & Soleado, Nublado y Lluvia son categorías sin jerarquía ya que no hay un clima mayor que otro, solo aplica moda. \\
+\texttt{tipo\_via} & Ordinal & Nosotros la tratamos como ordinal con el orden Local $<$ Arteria $<$ Troncal, porque en la jerarquía vial cada nivel implica más capacidad de flujo. Al haber orden pero no distancia numérica entre niveles, lo válido es la \textbf{mediana} o la moda, nunca la media. \\
+\texttt{conteo\_vehiculos} & Discreta & Son unidades contables enteras. Admite media y mediana, pero la elección depende de la forma de la distribución. \\
+\texttt{temperatura\_c} & Continua & Puede tomar cualquier valor decimal dentro de un rango físico . Admite media, desviación estándar y todas las operaciones aritméticas. \\
+\bottomrule
+\end{longtable}
+}
+
+\noindent\textbf{Nota sobre \texttt{tipo\_via}:} el Anexo A deja la discusión abierta y reconocemos que hay un argumento válido para tratarla como nominal, porque Local y Troncal describen función urbana y no necesariamente una escala. Escogimos ordinal porque el orden nos permite plantear una hipótesis comprobable (``a mayor jerarquía vial, mayor conteo''), y esa hipótesis resultó falsa en nuestros datos, lo cual es un resultado útil. Si la hubiéramos tratado como nominal, no habríamos podido ni formular la pregunta.
+\end{respuesta}
+
+
+\begin{pregunta}[1.2 -- Medidas de tendencia central y dispersión (8 pts)]
+Para \textbf{una variable ordinal} y \textbf{una variable continua} de su conjunto de datos:
+\begin{enumerate}[label=\alph*)]
+  \item Indique qué medida de tendencia central calcularía y por qué (justifique por qué \emph{no} usaría la media en la variable ordinal si aplica).
+  \item Proponga la medida de dispersión adecuada para la variable continua y explique qué le diría sobre la variabilidad del proceso de negocio subyacente.
+  \item Explique en qué escenario el rango intercuartílico (IQR) sería más informativo que la desviación estándar para esta variable.
+\end{enumerate}
+\end{pregunta}
+
+\begin{respuesta}[Respuesta 1.2]
+Variable ordinal: \texttt{tipo\_via}. Variable continua: \texttt{temperatura\_c}.
+
+\medskip
+\noindent\textbf{a) Medida de tendencia central}
+
+Para \texttt{tipo\_via} usaríamos la \textbf{mediana de la categoría} (que en el LIMPIO cae en ``Arteria'', el nivel del medio, porque hay exactamente 480 lecturas de cada tipo) y la reportaríamos junto con la tabla de frecuencias.
+
+\textbf{Por qué no la media:} para calcular una media habría que asignarle números a las categorías, por ejemplo Local$=1$, Arteria$=2$, Troncal$=3$, y promediarlos. El problema es que esos números son inventados por nosotros: estaríamos afirmando que la distancia entre Local y Arteria es igual a la distancia entre Arteria y Troncal, y eso no lo sabemos. Una vía troncal no tiene ``el triple'' de jerarquía que una local, tomarlo así sería arbitrario y erróneo.
+
+Para \texttt{temperatura\_c} usaríamos la \textbf{media}: $23{,}08$ °C. Aquí sí es defendible, porque la mediana es $23{,}10$ °C, prácticamente idéntica, y la asimetría es $-0{,}07$ (casi cero). Cuando media y mediana coinciden así, la distribución es simétrica y la media no está siendo arrastrada por valores extremos.
+
+\medskip
+\noindent\textbf{b) Medida de dispersión para la variable continua}
+
+La \textbf{desviación estándar}: $2{,}89$ °C sobre una media de $23{,}08$ °C, es decir un coeficiente de variación del 12,5\,\%. La escogemos porque, al ser la distribución simétrica, la desviación estándar es interpretable de forma directa: aproximadamente dos tercios de las lecturas caen entre 20,2 °C y 26,0 °C.
+
+\textbf{Qué nos dice del proceso de negocio:} que el clima de Medellín durante esos 20 días fue notablemente estable. Esto tiene una consecuencia práctica importante para la decisión: como la temperatura casi no varía, \textbf{no puede explicar la variación del tráfico}, que sí es enorme. Y efectivamente lo confirmamos: la correlación entre temperatura y conteo es $0{,}008$ en el archivo limpio, prácticamente cero, debido a esto vemos concluimos que no tienen correlación.
+
+\medskip
+\noindent\textbf{c) Cuándo el IQR sería más informativo que la desviación estándar}
+
+En dos escenarios concretos:
+
+\textbf{Primero, si hubiera un sensor descalibrado.} Supongamos que un equipo reporta $-40$ °C o $80$ °C por una falla eléctrica. La desviación estándar eleva esa diferencia al cuadrado, así que un solo valor absurdo puede duplicarla y hacernos creer que el clima de la ciudad es caótico. El IQR solo mira el 50\,\% central de los datos y no toma en cuenta este valor. Con datos de sensores IoT, donde las fallas de hardware son comunes, necesitamos tener una protección contra atípicos.
+
+\textbf{Segundo, y más relevante para nuestro caso, si la distribución tuviera dos modas.} Esto no le pasa a la temperatura, pero sí le pasa a \texttt{conteo\_vehiculos}, y es el hallazgo central de nuestro trabajo. Cuando una variable tiene dos grupos distintos mezclados, la desviación estándar mide la distancia entre los dos grupos, no la variabilidad dentro de cada uno, y termina describiendo algo que no existe. El IQR al menos deja ver la separación al compararlo con el rango total.
+\end{respuesta}
+
+
+\begin{pregunta}[1.3 -- Cualitativo vs. cuantitativo (6 pts)]
+Elija una variable categórica (cualitativa) de su conjunto de datos. Describa \textbf{dos} formas de resumirla (una numérica -- ej. tabla de frecuencias/proporciones -- y una gráfica) y explique qué decisión de negocio de su conjunto de datos se apoyaría en ese resumen.
+\end{pregunta}
+
+\begin{respuesta}[Respuesta 1.3]
+Variable elegida: \texttt{condicion\_clima} (nominal, con tres categorías en el archivo limpio).
+
+\medskip
+\noindent\textbf{Resumen numérico: tabla de frecuencias y proporciones}
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+Condición & Frecuencia & Proporción \\
+\midrule
+Soleado & 750 & 52,1\,\% \\
+Nublado & 470 & 32,6\,\% \\
+Lluvia  & 220 & 15,3\,\% \\
+\midrule
+Total & 1440 & 100\,\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Reportamos la proporción y no solo el conteo absoluto, porque el conteo depende de cuántos días se midieron y la proporción no. Si mañana se agregan 10 días más de datos, el conteo cambia pero la proporción es comparable.
+
+\medskip
+\noindent\textbf{Resumen gráfico: diagrama de barras}
+
+Un gráfico de barras con una barra por categoría. Ya que es más comodo ver barrras de tamaños diferentes que, por ejemplo, un diagrama de tortas.
+
+\medskip
+\noindent\textbf{Qué decisión de negocio se apoya en este resumen}
+
+La decisión es: \emph{¿la Secretaría de Movilidad debe incluir el clima como variable en el modelo de semaforización inteligente, o no?}
+
+El resumen muestra cuando cruzamos el clima contra el conteo, encontramos que en hora pico el conteo promedio es 39,3 con sol y 39,8 con lluvia: una diferencia de medio vehículo. La decisión que se apoya en este resumen es, entonces, \textbf{no invertir en integrar la API de clima al sistema de semaforización}, y destinar ese esfuerzo a lo que sí discrimina, que es la hora del día.
+\end{respuesta}
+
+
+\begin{pregunta}[1.4 -- Forma de la distribución y atípicos (6 pts)]
+Sin necesidad de graficarla, describa qué esperaría observar en la distribución de la variable continua principal de su conjunto de datos (¿simétrica, sesgada, con colas largas?) y justifique con base en el proceso que la genera (ej.\ demanda, tiempos de espera, conteos de tráfico). Explique un criterio (no necesariamente estadístico formal) para decidir si un valor es ``atípico pero real'' vs.\ ``error de captura''.
+\end{pregunta}
+
+\begin{respuesta}[Respuesta 1.4]
+Variable continua principal del conjunto: en sentido estricto es \texttt{temperatura\_c}, pero la variable que realmente manda en la decisión de negocio es \texttt{conteo\_vehiculos}, así que respondemos por las dos.
+
+\medskip
+\noindent\textbf{\texttt{temperatura\_c}: esperamos una distribución simétrica y sin colas largas.}
+El proceso que la genera es el clima de la ciudad de la eterna primavera, sin estaciones. La temperatura oscila alrededor de un valor central por el ciclo día/noche y está acotada por la física: no va a bajar de 10 °C ni a subir de 35 °C en Medellín. Procesos acotados y con oscilación regular producen distribuciones aproximadamente simétricas. Los datos lo confirman: media 23,08, mediana 23,10, asimetría $-0{,}07$.
+
+\medskip
+\noindent\textbf{\texttt{conteo\_vehiculos}: aquí nos equivocamos al predecir, y el error fue instructivo.}
+
+Inicialmente esperabamos una cola larga hacía arriba explicada por un comportamiento de unas pocas horas muy congestionadas y la mayoría de horas con un tráfico mederado.
+
+Pero al mirar la variable por hora del día apareció otra cosa. La distribución no tiene una cola: tiene \textbf{dos jorobas} (es bimodal).
+
+\begin{center}
+\begin{tabular}{lrrrrr}
+\toprule
+Franja & n & Media & Mediana & Desv. est. & Rango \\
+\midrule
+Pico (6, 8, 16, 18 h) & 480 & 39,59 & 40,0 & 5,80 & 24 -- 54 \\
+Valle (las otras 8 franjas) & 960 & 14,57 & 14,0 & 5,94 & 0 -- 34 \\
+\midrule
+Todo junto & 1440 & 22,91 & 19,0 & 13,18 & 0 -- 54 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Dentro de cada franja la desviación estándar cae de 13,18 a 5,8, y media y mediana vuelven a coincidir. Es decir: \textbf{no es una distribución sesgada, son dos distribuciones simétricas metidas en la misma columna.} El proceso que las genera tampoco es uno solo: en hora pico el tráfico lo genera el desplazamiento laboral masivo, y fuera de pico lo genera un flujo residual de viajes dispersos. Son dos fenómenos urbanos distintos.
+
+La consecuencia es fuerte: \textbf{la media de 22,91 vehículos no describe ningún momento real del día.} Cae justo en el hueco entre las dos jorobas, donde casi no hay observaciones. Es el promedio de dos mundos que nunca se tocan (el máximo en valle es 34 y el mínimo en pico es 24).
+
+\medskip
+\noindent\textbf{Criterio para distinguir ``atípico pero real'' de ``error de captura''}
+
+Nuestro criterio no es estadístico, es de contexto, y tiene dos preguntas:
+
+\textbf{1. ¿El valor es físicamente posible?} Si no lo es, es error, sin discusión. Un conteo negativo ($-3$ vehículos) o un 99\,999 son fisicamente imposibles.
+
+\textbf{2. ¿El valor tiene vecinos que lo acompañen?} Este es el criterio que más usamos. Un trancón real no aparece y desaparece en una sola lectura. Si a las 16:00 hay 52 vehículos, es esperable que a las 14:00 y a las 18:00 también haya cifras altas. En cambio, un pico aislado rodeado de lecturas normales nos indica una posible falla de equipo.
+
+Aplicando esto a nuestros datos: los valores de 54 vehículos a las 16:00 los conservamos (pasan las dos preguntas: son posibles y ocurren en franja pico). Los valores de 99\,999 y los negativos los tratamos como error. Y el caso de SEN04, donde las coordenadas venían invertidas de forma sistemática en \emph{todas} sus filas problemáticas, falla la pregunta 3 dejando en evidencia que es error de medición.
+\end{respuesta}
+
+
+\begin{pregunta}[1.5 -- Pregunta transversal (4 pts)]
+En sus palabras: ¿por qué dos datasets con la \textbf{misma media} pueden requerir decisiones de negocio completamente distintas? Ilustre con una variable de su conjunto de datos.
+\end{pregunta}
+
+\begin{respuesta}[Respuesta 1.5]
+Porque la media dice dónde está el centro, pero no dice \textbf{cómo están repartidos los datos alrededor de ese centro}, y la decisión de negocio casi siempre depende del reparto, no del centro.
+
+Lo vemos con nuestra propia variable, \texttt{conteo\_vehiculos}, y con dos escenarios que tienen exactamente la misma media de 22,9 vehículos:
+
+\medskip
+\noindent\textbf{Escenario 1 (el real, el de nuestros datos):} el corredor está en 14 vehículos durante 16 horas del día y salta a 40 durante 4 horas. Promedio: 22,9. Desviación estándar: 13,2.
+
+\noindent\textbf{Escenario 2 (hipotético):} el corredor está en 22 o 23 vehículos las 24 horas, todos los días. Promedio: 22,9. Desviación estándar: cercana a 1.
+
+\medskip
+En una hoja de cálculo, ambos corredores se ven idénticos. En la calle no se parecen en nada, y las decisiones son opuestas:
+
+\begin{itemize}[leftmargin=1.3em]
+  \item El \textbf{Escenario 1} necesita semaforización \emph{adaptativa}: el sistema tiene que cambiar de comportamiento cuatro veces al día. La inversión se justifica, pero solo si opera en las franjas correctas. Un semáforo con tiempos fijos calibrados al ``promedio'' de 22,9 vehículos estaría mal calibrado \textbf{las 24 horas}: demasiado largo en la madrugada y demasiado corto a las 7 de la mañana.
+  \item El \textbf{Escenario 2} no necesita semaforización inteligente en absoluto. Un semáforo de tiempos fijos calibrado a 23 vehículos funciona perfecto todo el día. La plata debería ir a otro corredor.
+\end{itemize}
+
+\medskip
+\noindent\textbf{En una frase:} la media responde ``¿cuánto?'', pero la decisión de negocio casi siempre depende de ``¿cuándo?'' y ``¿qué tan seguido?''. Por eso, cuando presentamos resultados, damos siempre la media acompañada de su dispersión y, si la distribución tiene más de una joroba como en nuestro caso, la partimos en grupos antes de resumirla. Reportar la media de 22,9 vehículos sin decir que es el promedio de dos regímenes distintos sería técnicamente correcto y prácticamente inútil.
+\end{respuesta}
+
+
+%==============================================================
+\section{Parte 2 -- Análisis y transformación de datos con problemas (40\%)}
+%==============================================================
+\begin{contexto}[Objetivo de la parte]
+Esta parte se responde sobre el archivo \textbf{CONTAMINADO} de su conjunto de datos. Debe diagnosticar los problemas de calidad (principio GIGO: completitud, unicidad, consistencia) y proponer/justificar su corrección con \texttt{pandas}. Se espera código corto y \emph{correcto en su lógica}, no una solución completa productizada.
+\end{contexto}
+
+\begin{pregunta}[2.1 -- Diagnóstico de calidad (10 pts)]
+Enumere \textbf{cinco} problemas de calidad distintos que usted identifique en el archivo contaminado de su conjunto de datos (ej.\ duplicados, valores faltantes, formatos de fecha mixtos, etiquetas categóricas inconsistentes, coordenadas geográficas inválidas, valores imposibles). Para cada uno, indique \textbf{cómo lo detectaría} con pandas (nombre el método, ej. \texttt{duplicated()}, \texttt{isnull().sum()}, \texttt{unique()}) sin necesariamente ejecutar el código.
+\end{pregunta}
+
+\begin{respuesta}[Respuesta 2.1]
+Estos son los problemas que encontramos en \texttt{movilidad\_sensores\_CONTAMINADO.csv} (1455 filas).
+
+{\small
+\begin{longtable}{p{0.4cm}p{4.1cm}p{3.2cm}p{6.4cm}}
+\toprule
+\# & Problema & Columna(s) & Cómo lo detectamos \\
+\midrule
+1 & \textbf{Faltantes}: 145 en conteo, 72 en temperatura, 87 en clima & \texttt{conteo\_vehiculos}, \texttt{temperatura\_c}, \texttt{condicion\_clima} & \texttt{df.isnull().sum()} \\
+2 & \textbf{Etiquetas repetidas}: 11 formas de escribir 3 categorías (\texttt{Sol}, \texttt{soleado}, \texttt{SOLEADO}, \texttt{Nubes}, \texttt{lluvioso}\ldots) & \texttt{condicion\_clima} & \texttt{df["condicion\_clima"]} \newline \texttt{~.value\_counts(dropna=False)} \\
+3 & \textbf{Duplicados}: 14 filas con la misma pareja sensor--instante; 7 son copias idénticas y 7 tienen contenido distinto & \texttt{sensor\_id} + \texttt{timestamp} & \texttt{df.duplicated().sum()} \newline \texttt{df.duplicated(subset=[...])} \\
+4 & \textbf{Fechas mezcladas}: 90 no convierten, en formatos como \texttt{1740880800} o \texttt{06 de March de 2025, 22:00} & \texttt{timestamp} & \texttt{pd.to\_datetime(...,} \newline \texttt{~errors="coerce").isna().sum()} \\
+5 & \textbf{Coordenadas malas}: 121 filas fuera de Medellín, con \texttt{lat} y \texttt{lon} cambiadas de columna & \texttt{lat}, \texttt{lon} & \texttt{\textasciitilde df["lat"].between(6.09,6.39)} \newline \texttt{| \textasciitilde df["lon"].between(-75.7,-75.47)} \\
+\bottomrule
+\end{longtable}
+}
+
+\end{respuesta}
+
+
+\begin{pregunta}[2.2 -- Fechas (6 pts)]
+La columna de fecha/hora de su conjunto de datos llega con formatos mixtos. Escriba la línea de \texttt{pandas} que usaría para convertirla a \texttt{datetime}, garantizando que los valores no convertibles queden como nulos en vez de detener el proceso. Luego responda: si el 8\,\% de las fechas no logran convertirse, ¿las elimina, las imputa, o las deja como nulo explícito? Justifique según el problema de negocio de su conjunto de datos.
+\end{pregunta}
+
+\begin{respuesta}[Respuesta 2.2]
+\begin{verbatim}
+df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+\end{verbatim}
+
+El \texttt{errors="coerce"} hace que las fechas que no se entienden queden como \texttt{NaT} en vez de detener el proceso con un error. Así podemos contarlas.
+
+\medskip
+\noindent\textbf{Las eliminamos.} Fueron 90 de 1455 filas, un 6,2\,\%, parecido al 8\,\% que plantea la pregunta.
+
+La razón es que la hora es la variable más importante de este análisis: lleva la probabilidad de congestión alta del 17\,\% al 52\,\% en pico y al 0\,\% fuera de pico. Una fila sin hora no aporta nada a esa pregunta.
+
+Tampoco tiene sentido imputarla. Poner la mediana de las fechas ubicaría la lectura en un momento que no ocurrió, y como el conteo depende tanto de la hora (14 en valle, 40 en pico), meter una lectura de valle dentro del pico dañaría justo lo que queremos medir. Dejarlas como nulo tampoco sirve, porque cualquier análisis por hora las excluye igual.
+
+Antes de borrarlas revisamos que no se concentraran en un sensor ni en una hora. Están repartidas entre los seis sensores, así que la pérdida no sesga nada.
+\end{respuesta}
+
+
+\begin{pregunta}[2.3 -- Variable lógica / categórica (6 pts)]
+Identifique una variable de su conjunto de datos con inconsistencias de texto (mayúsculas, espacios, sinónimos) o con codificación lógica/booleana implícita. Proponga la transformación (\texttt{str.strip()}, \texttt{str.lower()}, mapeo con diccionario, o similar) y justifique el criterio que usó para decidir qué categorías son ``la misma'' categoría.
+\end{pregunta}
+
+\begin{respuesta}[Respuesta 2.3]
+Variable: \texttt{condicion\_clima}, que trae 11 etiquetas para 3 categorías reales (\texttt{Sol}, \texttt{Soleado}, \texttt{soleado}, \texttt{SOLEADO}, \texttt{Nublado}, \texttt{Nubes}, \texttt{nublado}, \texttt{Lluvia}, \texttt{LLUVIA}, \texttt{lluvia}, \texttt{lluvioso}).
+
+\begin{verbatim}
+mapa = {"sol":"Soleado", "soleado":"Soleado", "nubes":"Nublado",
+        "nublado":"Nublado", "lluvia":"Lluvia", "lluvioso":"Lluvia"}
+df["condicion_clima"] = df["condicion_clima"].str.strip().str.lower().map(mapa)
+\end{verbatim}
+
+Cada paso resuelve algo distinto: \texttt{strip} quita los espacios invisibles al inicio y al final, que son el error más difícil de ver porque en pantalla se ve igual; \texttt{lower} junta todas las variantes de mayúsculas; y el \texttt{map} resuelve los sinónimos, que es lo único que no se puede automatizar.
+
+\medskip
+\noindent\textbf{El criterio para decidir qué etiquetas son la misma:} dos etiquetas son la misma categoría si una persona parada en la calle habría podido usar cualquiera de las dos. Nadie diría que ``lluvioso'' es un día distinto de uno con ``lluvia''.
+
+El caso que sí discutimos fue \texttt{Nubes} contra \texttt{Nublado}, porque se podría decir que uno es parcialmente nublado y el otro cielo cubierto. Las juntamos porque el diccionario del Anexo A define solo tres categorías válidas, así que ``Nubes'' es una forma libre de escribir ``Nublado''. El criterio salió del diccionario, no de los datos.
+
+Un detalle: el \texttt{map} convierte en nulo cualquier valor que no esté en el diccionario y lo hace sin avisar. Por eso comparamos los nulos antes y después: 87 en los dos casos, así que no perdimos ninguna etiqueta.
+\end{respuesta}
+
+
+\begin{pregunta}[2.4 -- Georreferenciación (8 pts)]
+Su conjunto de datos contiene coordenadas (\texttt{lat}/\texttt{lon}) con errores de captura (coordenadas invertidas, ceros, o fuera del área de Medellín). Proponga una regla de validación (rango aproximado de latitud/longitud de Medellín) y escriba en pandas cómo marcaría como inválida una fila que la incumpla. Discuta: ¿corregiría automáticamente una coordenada invertida (swap lat/lon) o la marcaría para revisión manual? Justifique el riesgo de cada opción.
+\end{pregunta}
+
+\begin{respuesta}[Respuesta 2.4]
+\noindent\textbf{Regla de validación.} Una fila es válida si cumple las dos condiciones al tiempo:
+$$6{,}09 \leq \texttt{lat} \leq 6{,}39 \qquad \text{y} \qquad -75{,}70 \leq \texttt{lon} \leq -75{,}47$$
+
+\begin{verbatim}
+fuera = (~df["lat"].between(6.09,6.39)) | (~df["lon"].between(-75.7,-75.47))
+\end{verbatim}
+
+Usamos \texttt{|} y no \texttt{\&}: basta con que una de las dos esté mal para que el punto no sirva. En una primera versión pusimos \texttt{\&} y el filtro dejó pasar filas obviamente malas.
+
+\medskip
+\noindent\textbf{¿Corregir el intercambio o marcarlo para revisión? Lo corregimos.}
+
+Las 121 filas malas son todas del mismo sensor (SEN04) y todas tienen \texttt{lat}$\,\approx -75{,}56$ y \texttt{lon}$\,\approx 6{,}28$, o sea los valores buenos pero en la columna equivocada.
+
+\begin{verbatim}
+se_puede = fuera & df["lon"].between(6.09,6.39) & df["lat"].between(-75.7,-75.47)
+df.loc[se_puede, ["lat","lon"]] = df.loc[se_puede, ["lon","lat"]].values
+\end{verbatim}
+
+Nuestra primera decisión había sido descartarlas, pero eso dejaba a SEN04 con 110 lecturas contra 225 de los demás. Perder la mitad de un corredor es caro, y más cuando Autopista Norte resultó ser el segundo más congestionado en hora pico.
+
+Además el arreglo se puede comprobar en parte: después del cambio las 222 lecturas de SEN04 caen dentro de un radio de menos de 100 metros, que es lo que uno espera de un sensor fijo. Si el intercambio fuera una idea equivocada, los puntos habrían quedado regados por la ciudad.
+
+\medskip
+\noindent El riesgo es real. Si la causa fuera otra, por ejemplo que se mezclaron dos sensores, estaríamos poniendo 112 lecturas en un sitio equivocado y ya nadie lo notaría, porque ahora esas filas pasan todas las validaciones. Por eso hacemos las dos cosas: corregimos para el análisis y guardamos las filas afectadas en \texttt{results/coordenadas\_corregidas.csv}, porque el sensor sigue mandando las coordenadas al revés.
+\end{respuesta}
+
+
+\begin{pregunta}[2.5 -- Imputación y valores imposibles (6 pts)]
+Elija una variable numérica con valores imposibles (ej.\ negativos donde no corresponde, o fuera de rango físico/lógico). Proponga: (a) el criterio para definir el rango válido, (b) la estrategia de imputación o eliminación, y (c) qué sesgo introduciría su decisión en el análisis posterior si la estrategia es incorrecta.
+\end{pregunta}
+
+\begin{respuesta}[Respuesta 2.5]
+Variable: \texttt{conteo\_vehiculos}, con 6 valores negativos y 4 lecturas de 99\,999.
+
+\medskip
+\noindent\textbf{a) Criterio para definir el rango válido}
+
+Un conteo no puede ser negativo. Por arriba, el máximo creíble que vimos es 54 vehículos en dos horas y el percentil 99 está cerca de 50, así que pasar de 54 a 99\,999 no es una cola larga sino otra escala. El indicio más fuerte es que esas cuatro filas, el 0,27\,\% de los datos, suben la media de 22,8 a 328. Nuestra regla: válido si $0 \leq \texttt{conteo} < 999$.
+
+\medskip
+\noindent\textbf{b) Estrategia}
+
+Primero pasamos el valor imposible a nulo en vez de borrar la fila, porque el sensor, la hora, la ubicación y el clima de esa fila siguen sirviendo.
+
+Después lo imputamos con la mediana del mismo sensor a la misma hora:
+\begin{verbatim}
+df["conteo_vehiculos"] = df["conteo_vehiculos"].fillna(
+    df.groupby(["sensor_id", df["timestamp"].dt.hour])["conteo_vehiculos"]
+      .transform("median"))
+\end{verbatim}
+
+Mediana y no media porque la media se deja arrastrar por los valores extremos, y este es justamente un problema de valores extremos. Y por sensor y hora, no general, porque la mediana global es 18 vehículos y ese número no describe ningún momento del día: en pico son 40 y en valle 14. Rellenar con 18 una lectura de las 8 de la mañana aplanaría el pico, que es la señal que buscamos.
+
+\medskip
+\noindent\textbf{c) Qué sesgo introduciría una estrategia equivocada}
+
+Si no tocáramos los 99\,999, la media pasa de 22,8 a 328 y el corredor que tenga una de esas cuatro lecturas se vería como el más congestionado de la ciudad.
+
+Si rellenáramos con la mediana global (18), nos daría números que tienen sentido, pero sería una falsa representación de datos. Los 146 faltantes quedarían todos en 18, la curva por hora se aplanaría y nadie lo notaría revisando el notebook.
+
+Si borráramos las filas, y el sensor fallara más en hora pico porque está más exigido, estaríamos eliminando sobre todo lecturas altas.
+
+\medskip
+\noindent Y el límite de lo que hicimos: imputar con la mediana asume que la lectura faltante era un día normal. Si el sensor falló porque hubo un accidente, borramos el evento más interesante. Aunque el resultado final tenga cero nulos, 146 de los 1351 conteos (el 10,8\,\%) son estimaciones nuestras.
+\end{respuesta}
+
+
+\begin{pregunta}[2.6 -- Duplicados y llave de negocio (4 pts)]
+Explique qué columna(s) usaría como ``llave de negocio'' para detectar duplicados reales (no solo duplicados exactos de fila) en su conjunto de datos, y por qué un duplicado exacto de fila no es lo mismo que un duplicado de evento de negocio.
+\end{pregunta}
+
+\begin{respuesta}[Respuesta 2.6]
+\noindent\textbf{Llave de negocio: \texttt{sensor\_id} + \texttt{timestamp}.}
+\begin{verbatim}
+df = df.drop_duplicates(subset=["sensor_id","timestamp"], keep="last")
+\end{verbatim}
+
+Esas dos columnas juntas describen un equipo específico midiendo en un momento específico. Un sensor está atornillado a un poste, no puede estar en dos sitios ni registrar dos conteos distintos en el mismo minuto.
+
+\medskip
+\noindent El \texttt{.duplicated()} sin \texttt{subset} compara las nueve columnas y solo marca filas idénticas letra por letra. Encuentra el caso fácil: la fila que se copió al juntar dos archivos.
+
+En nuestros datos la llave marca 14 filas repetidas. Siete son copias idénticas, que solo le dan doble peso a una lectura verdadera. Las otras siete tienen contenido distinto, y esas sí son el problema: para el \texttt{.duplicated()} ingenuo son filas diferentes y las dejaría pasar las dos, pero son un mismo evento reportado dos veces y una de las dos versiones no es real.
+
+Al mirarlas encontramos que no traen conteos contradictorios, se diferencian en los nulos. SEN01 el 8 de marzo a las 04:00 aparece una vez con el conteo vacío y otra con 10 vehículos. El registro se cargó dos veces y en la segunda pasada completaron campos que faltaban.
+
+Usamos \texttt{keep="last"} asumiendo que la versión posterior es la corregida. En la mayoría de los siete pares se cumple pero hay al menos uno donde la última trae menos datos. Es una suposición nuestra y el archivo no la respalda, porque no hay columna con la fecha de carga. Con 7 filas sobre 1358 el impacto es menor al 1\,\% y seguimos, pero si fueran 300 tendríamos que buscar una alternativa diferente.
+\end{respuesta}
+
+
+%==============================================================
+\section{Parte 3 -- Interpretación de resultados y decisión (30\%)}
+%==============================================================
+\begin{contexto}[Objetivo de la parte]
+A continuación se presentan resultados ya calculados (tablas y gráficas) para los tres conjuntos de datos, obtenidos a partir de los datos \textbf{limpios}. Responda \textbf{únicamente} la sección correspondiente al conjunto de datos que su equipo eligió. No se requiere código en esta parte: se evalúa su capacidad de leer evidencia y argumentar una decisión.
+\end{contexto}
+
+% ---------------- TRACK A RESULTS ----------------
+\subsection*{Resultados -- Dataset A: Retail}
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Categoría & N transacciones & Unidades prom. & Precio prom. (COP) & Rating prom. \\
+\midrule
+Bebidas   & 104 & 2.88 & 3\,964 & 3.90 \\
+Pan       & 109 & 4.06 & 2\,642 & 3.81 \\
+Pasteles  & 91  & 2.62 & 5\,831 & 4.01 \\
+Snacks    & 116 & 3.34 & 2\,497 & 3.85 \\
+\bottomrule
+\end{tabular}
+\caption{Resumen por categoría de producto (datos limpios, 420 transacciones, 8 tiendas).}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{datasetA_fig1.png}
+\caption{Izquierda: unidades vendidas promedio por categoría. Derecha: calificación promedio por tienda.}
+\end{figure}
+
+\begin{pregunta}[3.A -- Decisión de inventario (30 pts si este fue el conjunto de datos elegido por su equipo)]
+La gerencia debe decidir en qué categoría concentrar el próximo presupuesto de reabastecimiento y qué tienda requiere intervención prioritaria.
+\begin{enumerate}[label=\alph*)]
+  \item A partir de la tabla, ¿qué categoría tiene mayor rotación (unidades) pero menor margen aparente (precio), y qué implicación tiene esto para la política de inventario (recuerde el ``Dilema del Inventario'' visto en clase: costo de sobre-stock vs.\ costo de oportunidad)?
+  \item Con base en la gráfica de calificación por tienda, ¿qué tienda(s) requieren intervención? Proponga \textbf{una} hipótesis de negocio (no estadística) que explique el rating bajo.
+  \item Redacte la recomendación final en máximo 5 líneas, dirigida a un gerente no técnico, indicando la acción concreta y el riesgo de no actuar.
+\end{enumerate}
+\end{pregunta}
+\begin{aviso}[No aplica]
+Nuestro equipo trabajó el \textbf{Dataset C -- Movilidad urbana}, por lo que esta sección (Dataset A -- Retail) no se responde. Ver la respuesta 3.C.
+\end{aviso}
+
+% ---------------- TRACK B RESULTS ----------------
+\subsection*{Resultados -- Dataset B: Salud pública}
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Comuna & N consultas & Edad prom. & \% Urgencia Alta & \% Hospitalizado \\
+\midrule
+Popular          & 31 & 34.3 & 19.4 & 16.1 \\
+Santa Cruz       & 38 & 47.3 & 15.8 & 7.9 \\
+La América       & 33 & 45.3 & 15.2 & 3.0 \\
+Robledo          & 29 & 44.4 & 17.2 & 3.4 \\
+San Javier       & 25 & 36.8 & 4.0  & 12.0 \\
+Laureles         & 40 & 40.2 & 12.5 & 5.0 \\
+\bottomrule
+\end{tabular}
+\caption{Subconjunto de comunas con mayor \% de urgencia alta o de hospitalización (tabla completa disponible en \texttt{datasetB\_tabla.csv}, 16 comunas, 520 consultas).}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{datasetB_fig1.png}
+\caption{Izquierda: consultas totales por comuna (Top 10). Derecha: proporción de nivel de urgencia por comuna.}
+\end{figure}
+
+\begin{pregunta}[3.B -- Decisión de asignación de recursos (30 pts si este fue el conjunto de datos elegido por su equipo)]
+La Secretaría de Salud debe decidir en qué comunas reforzar personal de urgencias la próxima semana, con presupuesto limitado para 3 comunas.
+\begin{enumerate}[label=\alph*)]
+  \item Compare Popular y San Javier: una tiene mayor \% de urgencia alta y la otra mayor \% de hospitalización. ¿Son la misma señal? Explique por qué estas dos métricas pueden priorizar comunas distintas.
+  \item ¿Usaría el volumen total de consultas (gráfica izquierda) o la proporción de urgencia (gráfica derecha) como criterio principal de priorización? Justifique el riesgo de usar solo una de las dos.
+  \item Proponga las 3 comunas a priorizar y redacte la justificación en máximo 6 líneas, mencionando explícitamente qué haría si los datos de una comuna tienen \textbf{pocas observaciones} (riesgo de conclusiones con muestras pequeñas).
+\end{enumerate}
+\end{pregunta}
+\begin{aviso}[No aplica]
+Nuestro equipo trabajó el \textbf{Dataset C -- Movilidad urbana}, por lo que esta sección (Dataset B -- Salud pública) no se responde. Ver la respuesta 3.C.
+\end{aviso}
+
+% ---------------- TRACK C RESULTS ----------------
+\subsection*{Resultados -- Dataset C: Movilidad urbana}
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Tipo de vía & N lecturas & Conteo prom. & Conteo máx. & Temp. prom. (°C) \\
+\midrule
+Arteria & 480 & 22.5 & 54 & 23.3 \\
+Local   & 480 & 23.0 & 53 & 23.1 \\
+Troncal & 480 & 23.2 & 53 & 22.9 \\
+\bottomrule
+\end{tabular}
+\caption{Resumen por tipo de vía (datos limpios, 6 sensores, 20 días, lecturas cada 2 horas).}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{datasetC_fig1.png}
+\caption{Izquierda: conteo promedio de vehículos por hora del día. Derecha: conteo promedio por sensor.}
+\end{figure}
+
+\begin{pregunta}[3.C -- Decisión de gestión de tráfico (30 pts si este fue el conjunto de datos elegido por su equipo)]
+La Secretaría de Movilidad debe decidir en qué franjas horarias y en qué corredores concentrar un piloto de semaforización inteligente.
+\begin{enumerate}[label=\alph*)]
+  \item A partir de la gráfica por hora, identifique los picos de tráfico y proponga una hipótesis del fenómeno urbano que los explica.
+  \item La tabla muestra conteos promedio casi idénticos entre Arteria, Local y Troncal. ¿Esto significa que el tipo de vía \textbf{no} es relevante para la decisión? Argumente qué otra evidencia (de la gráfica derecha, por sensor) matiza esta conclusión.
+  \item Redacte la recomendación final en máximo 6 líneas: ¿en qué corredor(es) y horario(s) iniciaría el piloto, y qué variable adicional (de las disponibles: clima, ubicación) monitorearía para validar el impacto?
+\end{enumerate}
+\end{pregunta}
+
+\begin{respuesta}[Respuesta 3.C]
+\noindent\textbf{a) Picos de tráfico e hipótesis}
+
+En la gráfica izquierda hay cuatro picos: 6 h (39,6), 8 h (38,6), 16 h (40,7) y 18 h (39,4). Las otras ocho franjas se quedan planas entre 13,8 y 15,6. Se evidencia un flujo no gradual, ya que entre las 4 y las 6 de la mañana se pasa de 14 a 39, y a las 10 vuelve a caer a 15.
+
+La hipótesis es el movimiento diario entre la casa y el trabajo: dos oleadas de entrada en la mañana y dos de salida en la tarde. La forma de ``M'' es lo típico de una ciudad donde la mayoría se mueve en los mismos dos sentidos a las mismas horas, como en Medellín.
+
+En nuestro notebook revisamos si el patrón cambia el fin de semana y no cambia (22,73 contra 23,08 vehículos promedio). Si el pico fuera solo por trabajo, el domingo debería verse plano. Sería lo primero que confirmaríamos en campo antes de invertir.
+
+\medskip
+\noindent\textbf{b) ¿Los conteos casi idénticos significan que el tipo de vía no importa?}
+
+No significa que no importe, significa que el conteo promedio no sirve para decidir. La tabla da Arteria 22,5, Local 23,0 y Troncal 23,2, y en nuestro notebook obtuvimos lo mismo (22,4 / 23,0 / 23,3). Con esa tabla, escoger un corredor sería tirar una moneda.
+
+La gráfica derecha (por sensor) matiza la conclusión en tres cosas:
+
+\begin{itemize}[leftmargin=1.3em]
+  \item \textbf{El orden no es al azar.} Los sensores aparecen ordenados SEN04 (Troncal), SEN06 (Local), SEN01 (Troncal), SEN03 (Local), SEN02 (Arteria) y SEN05 (Arteria). Los dos de Arteria quedan de últimos y el más alto es una troncal, que es justo lo que dice la tabla. O sea que sí hay un orden coherente con la jerarquía vial, solo que el tamaño de la diferencia es de un vehículo.
+  \item \textbf{La escala engaña un poco.} Las barras arrancan en cero, así que las seis se ven idénticas. Si se acercara el eje se vería que van de 22,2 a 23,3. Aun así la diferencia sigue siendo mínima al lado de los 25 vehículos que separan la hora pico de la hora valle.
+  \item \textbf{El promedio esconde la estructura.} Ese 22,8 es el promedio de dos situaciones que nunca se tocan: 40 en pico y 14 fuera de pico. Todos los sensores dan casi lo mismo porque todos tienen las mismas dos situaciones. Promediar sobre las 24 horas borró la única variable que sí separa los datos.
+\end{itemize}
+
+Lo que sí sirve es mirar solo la hora pico: ahí la probabilidad de pasar de 40 vehículos va de 40,8\,\% en Av. 33 a 61,8\,\% en Circular 4ta, veintiún puntos entre el mejor y el peor.
+
+Otra cosa que nos sirvió para la recomendación: SEN04 (Autopista Norte) es la barra más alta de la gráfica dada, y en nuestros datos también queda entre las dos más altas (23,30). Eso respalda incluirlo en el piloto, y es la razón por la que valía la pena corregir sus coordenadas en vez de botar sus filas. Gracias a eso los tres tipos de vía quedaron con casi las mismas lecturas (33,8 / 33,2 / 33,1\,\%); si las hubiéramos descartado, Troncal habría bajado a 27\,\% y la comparación habría quedado sesgada por nuestra propia limpieza.
+
+\medskip
+\noindent\textbf{c) Recomendación final}
+
+\begin{tcolorbox}[colback=green!4,colframe=green!45!black,title=Recomendación para la Secretaría de Movilidad,fonttitle=\bfseries]
+Iniciar el piloto en Circular 4ta, Autopista Norte y Av. Regional, solo en las franjas 6:00--9:00 y 16:00--19:00, donde la probabilidad de congestión alta es de 61,8\,\%, 56,8\,\% y 54,1\,\% frente a 0\,\% fuera de esas horas. Monitorear la hora del día y no el clima, porque la correlación entre temperatura y conteo es 0,006. Medir el éxito como una caída de esa probabilidad por debajo del 40\,\%, con Av. 33 y Av. Oriental como control. Revisar SEN04, que sigue reportando lat y lon al revés.
+\end{tcolorbox}
+
+\medskip
+\noindent Nos pedían monitorear clima o ubicación y revisamos las dos. La ubicación da conteos casi idénticos y el clima diferencias de medio vehículo. Hay además una razón de fondo: la temperatura se queda entre 22,76 y 23,33 °C durante las 24 horas, sin bajar de madrugada ni subir en la tarde. Una variable que no cambia difícilmente explica una que sí.
+
+Lo comprobamos también al revés. La pregunta que teníamos en el \texttt{README} era ``¿cómo afectan las horas pico a la temperatura ambiental?'', y la respuesta es que no la afectan: 23,09 °C en pico contra 23,06 °C en valle. La cambiamos porque no llevaba a ninguna decisión.
+
+Lo que más nos sirvió del taller: la única variable que separa los datos es la hora, y no venía como columna en el archivo. La construimos con \texttt{timestamp.dt.hour}.
+\end{respuesta}
+
+
+%==============================================================
+\newpage
+\appendix
+\section*{Anexo A -- Diccionario de variables por conjunto de datos}
+
+\subsection*{Dataset A -- Retail (\texttt{retail\_ventas})}
+\begin{longtable}{p{3.2cm}p{3cm}p{7cm}}
+\toprule
+Variable & Tipo & Descripción \\
+\midrule
+\texttt{transaction\_id} & Nominal (id) & Identificador único de transacción \\
+\texttt{store\_id} / \texttt{comuna} & Nominal & Tienda y zona de Medellín \\
+\texttt{date} & Fecha & Fecha de la venta \\
+\texttt{category} & Nominal & Pan, Pasteles, Bebidas, Snacks \\
+\texttt{units\_sold} & Discreta & Unidades vendidas en la transacción \\
+\texttt{unit\_price} & Continua & Precio unitario (COP) \\
+\texttt{payment\_method} & Nominal & Efectivo, Tarjeta, App \\
+\texttt{customer\_rating} & Ordinal & Calificación 1 a 5 \\
+\texttt{store\_lat}, \texttt{store\_lon} & Continua (geo) & Coordenadas de la tienda \\
+\bottomrule
+\end{longtable}
+
+\subsection*{Dataset B -- Salud (\texttt{salud\_consultas})}
+\begin{longtable}{p{3.2cm}p{3cm}p{7cm}}
+\toprule
+Variable & Tipo & Descripción \\
+\midrule
+\texttt{consulta\_id} & Nominal (id) & Identificador único de consulta \\
+\texttt{fecha} & Fecha & Fecha de la consulta \\
+\texttt{comuna\_id}, \texttt{comuna\_nombre} & Nominal & Comuna de Medellín (1-16) \\
+\texttt{edad} & Discreta & Edad del paciente (años) \\
+\texttt{sexo} & Nominal & F / M \\
+\texttt{sintoma\_principal} & Nominal & Síntoma reportado \\
+\texttt{nivel\_urgencia} & Ordinal & Baja $<$ Media $<$ Alta \\
+\texttt{resultado} & Nominal & Ambulatorio, Remitido, Hospitalizado \\
+\texttt{lat}, \texttt{lon} & Continua (geo) & Coordenadas asociadas a la comuna \\
+\bottomrule
+\end{longtable}
+
+\subsection*{Dataset C -- Movilidad (\texttt{movilidad\_sensores})}
+\begin{longtable}{p{3.2cm}p{3cm}p{7cm}}
+\toprule
+Variable & Tipo & Descripción \\
+\midrule
+\texttt{sensor\_id}, \texttt{ubicacion} & Nominal & Identificador y nombre del corredor vial \\
+\texttt{tipo\_via} & Nominal/Ordinal* & Troncal, Arteria, Local \\
+\texttt{timestamp} & Fecha-hora & Momento de la lectura \\
+\texttt{conteo\_vehiculos} & Discreta & Vehículos contados en el intervalo \\
+\texttt{temperatura\_c} & Continua & Temperatura ambiente (°C) \\
+\texttt{condicion\_clima} & Nominal & Soleado, Nublado, Lluvia \\
+\texttt{lat}, \texttt{lon} & Continua (geo) & Coordenadas del sensor \\
+\bottomrule
+\end{longtable}
+{\footnotesize *Discuta usted mismo en 1.1 si \texttt{tipo\_via} debe tratarse como nominal u ordinal según jerarquía vial -- no hay una única respuesta correcta.}
+
+\section*{Anexo B -- Rúbrica general}
+\begin{longtable}{p{2.5cm}p{9cm}r}
+\toprule
+Parte & Criterio dominante & Peso \\
+\midrule
+Parte 1 & Correcta identificación del tipo de dato y del estadístico asociado; claridad argumentativa. & 30\% \\
+Parte 2 & Diagnóstico correcto del problema de calidad + corrección propuesta coherente y justificada (no solo código que ``funcione''). & 40\% \\
+Parte 3 & Lectura correcta de la evidencia visual/tabular; decisión de negocio explícita, accionable y con riesgos declarados. & 30\% \\
+\bottomrule
+\end{longtable}
+
+\end{document}
